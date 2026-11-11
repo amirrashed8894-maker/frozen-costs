@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var VER='1.0.2',KEY='frozen-costs-v1';
+var VER='1.0.3',KEY='frozen-costs-v1';
 var BUILTIN=[['strawberry','فراولة'],['broccoli','بروكلي'],['cauliflower','قرنبيط'],['artichoke','خرشوف']];
 var $=function(s){return document.querySelector(s)};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -10,7 +10,8 @@ function f3(x){x=Math.round(x*1000)/1000+0;return x.toLocaleString('en-US',{mini
 function d0(x){return '$'+f0(x)}function d2(x){return '$'+f2(x)}
 function pct(x){return '<span class="ltr">'+x.toFixed(1)+'%</span>'}
 function dash(x,fn){return Math.abs(x)<0.005?'-':fn(x)}
-function today(){var d=new Date();return ('0'+d.getDate()).slice(-2)+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+d.getFullYear()}
+function cairoISO(d){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(d||new Date())}
+function today(){var iso=cairoISO();return iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4)}
 function load(){var s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(!s||!s.v){s={cur:'strawberry',v:{}}}
  BUILTIN.forEach(function(b){if(!s.v[b[0]]){var d=FC.defaults(b[1]);d.builtin=true;d.needs=b[0]!=='strawberry';s.v[b[0]]=d}});
@@ -133,6 +134,6 @@ function sharePdf(){$('#busy').hidden=false;makePdf().then(function(pdf){var blo
   if(file&&navigator.canShare&&navigator.canShare({files:[file]})){$('#busy').hidden=true;return navigator.share({files:[file],title:name.replace('.pdf',''),text:'تقرير '+name.replace(/_/g,' ').replace('.pdf','')}).catch(function(){})}
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);$('#busy').hidden=true})
  .catch(function(e){$('#busy').hidden=true;alert('ماقدرتش أجهز الـ PDF: '+e)})}
-window.FCAPP={makePdf:makePdf,state:function(){return S},render:renderAll};
+window.FCAPP={makePdf:makePdf,state:function(){return S},render:renderAll,today:today,cairoISO:cairoISO};
 renderAll();
 })();
