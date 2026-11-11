@@ -1,12 +1,12 @@
 (function(){
 'use strict';
-var VER='1.0.0',KEY='frozen-costs-v1';
+var VER='1.0.1',KEY='frozen-costs-v1';
 var BUILTIN=[['strawberry','فراولة'],['broccoli','بروكلي'],['cauliflower','قرنبيط'],['artichoke','خرشوف']];
 var $=function(s){return document.querySelector(s)};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function f0(x){return Math.round(x).toLocaleString('en-US')}
-function f2(x){return x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function f3(x){return x.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:3})}
+function f0(x){return (Math.round(x)+0).toLocaleString('en-US')}
+function f2(x){x=Math.round(x*100)/100+0;return x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function f3(x){x=Math.round(x*1000)/1000+0;return x.toLocaleString('en-US',{minimumFractionDigits:3,maximumFractionDigits:3})}
 function d0(x){return '$'+f0(x)}function d2(x){return '$'+f2(x)}
 function pct(x){return '<span class="ltr">'+x.toFixed(1)+'%</span>'}
 function dash(x,fn){return Math.abs(x)<0.005?'-':fn(x)}
@@ -36,10 +36,18 @@ function renderInputs(){var v=V(),L=esc(v.sizeLabel||'الحجم الكبير'),
  $('#inputs').innerHTML=h}
 function renderSupplies(){var v=V(),h='';v.supplies.forEach(function(s,i){h+='<div class="sup"><input data-sn="'+i+'" value="'+esc(s.name)+'" aria-label="اسم البند"><input class="v" inputmode="decimal" data-sv="'+i+'" value="'+esc(s.v)+'" aria-label="ج للطن"><button class="x" data-sd="'+i+'" aria-label="حذف">×</button></div>'});
  h+='<div class="suptot"><span>إجمالي المستلزمات</span><span class="num" id="supTot"></span></div>';$('#supplies').innerHTML=h}
-function renderLive(){var v=V(),r=FC.calc(v);
- $('#net').textContent=v.inputs.carton+' ك · '+v.inputs.tons+' طن · الدولار '+v.inputs.usd;
+function errs(){return FC.validate(V())}
+function markBad(E){document.querySelectorAll('.bad').forEach(function(x){x.classList.remove('bad')});document.querySelectorAll('.emsg').forEach(function(x){x.remove()});
+ E.forEach(function(e){var el=e.k?document.querySelector('[data-i="'+e.k+'"]'):document.querySelector('[data-sv="'+e.s+'"]');if(!el)return;var box=e.k?el.parentNode:el.parentNode;(e.k?el.parentNode:el).classList.add('bad');
+  var m=document.createElement('div');m.className='emsg';m.textContent=e.msg.replace(/^[^:]*: /,'');if(e.k)box.insertAdjacentElement('afterend',m);else box.insertAdjacentElement('afterend',m)})}
+function renderLive(){var v=V(),r=FC.calc(v),E=FC.validate(v);markBad(E);
+ $('#net').textContent=r.I.carton+' ك · '+r.I.tons+' طن · الدولار '+r.I.usd;
+ var bad=E.length>0;document.body.classList.toggle('invalid',bad);
+ if(bad){$('#sum').innerHTML='<div class="lbl">تكلفة الطن الصافي ظهر الحاوية — '+esc(v.name)+'</div><div class="big"><span class="egp num">—</span></div><div class="err"><b>مفيش حساب لحد ما تصحح الخانات المعلّمة:</b><ul>'+E.map(function(e){return '<li>'+esc(e.msg)+'</li>'}).join('')+'</ul></div>';
+  var st0=$('#supTot');if(st0)st0.textContent='—';$('#breakdown').innerHTML='<h2>المجمل</h2><div class="hint">هيظهر بعد تصحيح المدخلات.</div>';
+  var n0=$('#notice');n0.hidden=true;$('#bDel').hidden=!!v.builtin;return}
  $('#sum').innerHTML='<div class="lbl">تكلفة الطن الصافي ظهر الحاوية — '+esc(v.name)+'</div><div class="big"><span class="egp num">'+f0(r.total)+'<i>ج</i></span><span class="usd num">'+d2(r.usd)+'</span></div>'+
- '<div class="kpis"><div class="kpi"><span>الكيلو</span><b class="num">'+f2(r.kg)+' ج</b><em class="num">'+'$'+f3(r.kgUsd)+'</em></div><div class="kpi"><span>الكرتونة '+esc(v.inputs.carton)+' ك</span><b class="num">'+f2(r.carton)+' ج</b><em class="num">'+d2(r.cartonUsd)+'</em></div><div class="kpi"><span>الحاوية '+esc(v.inputs.tons)+' طن</span><b class="num">'+f0(r.cont)+' ج</b><em class="num">'+d0(r.contUsd)+'</em></div></div>';
+ '<div class="kpis"><div class="kpi"><span>الكيلو</span><b class="num">'+f2(r.kg)+' ج</b><em class="num">'+'$'+f3(r.kgUsd)+'</em></div><div class="kpi"><span>الكرتونة '+r.I.carton+' ك</span><b class="num">'+f2(r.carton)+' ج</b><em class="num">'+d2(r.cartonUsd)+'</em></div><div class="kpi"><span>الحاوية '+r.I.tons+' طن</span><b class="num">'+f0(r.cont)+' ج</b><em class="num">'+d0(r.contUsd)+'</em></div></div>';
  var st=$('#supTot');if(st)st.textContent=f0(r.supT)+' ج';
  var rows='';r.rawLines.forEach(function(l){rows+='<tr><td>'+esc(l.name)+'</td><td class="v num">'+f0(l.v)+'</td><td class="v num">'+pct(r.total?l.v/r.total*100:0)+'</td></tr>'});
  $('#breakdown').innerHTML='<h2>المجمل</h2><div class="bar"><i style="width:'+r.rawPct+'%"></i><i style="width:'+r.supPct+'%"></i></div><div class="bk"><table>'+
@@ -55,6 +63,9 @@ document.addEventListener('input',function(e){var t=e.target,v=V();if(!v)return;
  else if(t.dataset.t){v.sizeLabel=t.value;save();renderLive();document.querySelectorAll('#inputs label').forEach(function(l,i){});clearTimeout(window.__lt);window.__lt=setTimeout(function(){var a=document.activeElement;renderInputs();var x=document.querySelector('[data-t="sizeLabel"]');if(a&&a.dataset.t&&x){x.focus();x.setSelectionRange(x.value.length,x.value.length)}},600)}
  else if(t.dataset.sn!=null){v.supplies[+t.dataset.sn].name=t.value;save()}
  else if(t.dataset.sv!=null){v.supplies[+t.dataset.sv].v=t.value;save();renderLive()}});
+document.addEventListener('change',function(e){var t=e.target,v=V();if(!v)return;var k=t.dataset.i,si=t.dataset.sv;if(!k&&si==null)return;
+ var x=FC.parse(t.value);if(!isFinite(x))return;var s=String(x);if(s!==t.value.trim()){t.value=s;if(k)v.inputs[k]=s;else v.supplies[+si].v=s;save();renderLive()}});
+function blocked(){var E=errs();if(!E.length)return false;alert('صحّح الخانات دي الأول:\n• '+E.map(function(e){return e.msg}).join('\n• '));return true}
 document.addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;var v=V();
  if(t.dataset.k){S.cur=t.dataset.k;save();renderAll();scrollTo(0,0)}
  else if(t.id==='addVar'){var nm=(prompt('اسم الصنف الجديد:')||'').trim();if(!nm)return;var id='v'+Date.now(),d=FC.defaults(nm);d.needs=true;S.v[id]=d;S.order.push(id);S.cur=id;save();renderAll()}
@@ -64,9 +75,9 @@ document.addEventListener('click',function(e){var t=e.target.closest('button');i
  else if(t.id==='bRename'){var nm2=(prompt('اسم الصنف:',v.name)||'').trim();if(nm2){v.name=nm2;save();renderAll()}}
  else if(t.id==='bReset'){if(!confirm('ترجع أرقام «'+v.name+'» للأرقام الافتراضية (أرقام تقرير الفراولة)؟'))return;var d2_=FC.defaults(v.name);d2_.builtin=v.builtin;d2_.needs=S.cur!=='strawberry';S.v[S.cur]=d2_;save();renderAll()}
  else if(t.id==='bDel'){if(v.builtin||!confirm('حذف صنف «'+v.name+'» وكل أرقامه؟'))return;delete S.v[S.cur];S.order=S.order.filter(function(k){return k!==S.cur});S.cur='strawberry';save();renderAll()}
- else if(t.id==='bReport'){openRep()}
- else if(t.id==='bPrint'||t.id==='rPrint'){buildPages();$('#rep').hidden=false;fit();setTimeout(function(){window.print()},350)}
- else if(t.id==='bShare'||t.id==='rShare'){sharePdf()}
+ else if(t.id==='bReport'){if(blocked())return;openRep()}
+ else if(t.id==='bPrint'||t.id==='rPrint'){if(blocked())return;buildPages();$('#rep').hidden=false;fit();setTimeout(function(){window.print()},350)}
+ else if(t.id==='bShare'||t.id==='rShare'){if(blocked())return;sharePdf()}
  else if(t.id==='rClose'){$('#rep').hidden=true}});
 /* ---------- report ---------- */
 function reportHtml(){var v=V(),r=FC.calc(v),I=r.I,dt=today(),T=I.tons,U=I.usd||1,tot=r.total||1;
