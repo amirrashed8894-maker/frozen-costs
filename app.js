@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var VER='1.0.1',KEY='frozen-costs-v1';
+var VER='1.0.2',KEY='frozen-costs-v1';
 var BUILTIN=[['strawberry','فراولة'],['broccoli','بروكلي'],['cauliflower','قرنبيط'],['artichoke','خرشوف']];
 var $=function(s){return document.querySelector(s)};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
